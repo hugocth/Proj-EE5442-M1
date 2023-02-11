@@ -1,4 +1,4 @@
-# NUS EE5442 project - Milestone 1
+# NUS EE5442 Project - Milestone 1
 
 Requirements: pandas, pytorch
 
@@ -7,3 +7,5 @@ To run an experiment:
 - Run: `python experiments_quantization.py`
 
 Results of experiments are stored in CSV format in the `results` folder.
+
+WARNING: never push datasets in the remote repo!
