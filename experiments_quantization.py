@@ -135,7 +135,7 @@ def test(model, testloader, is_double_experiment=False):
     inference_time = t1 - t0
 
     print('Accuracy of the network on the 10000 test images: %d %%' % (accuracy))
-    print(f'Elapsed time for training: {int(inference_time)}s')
+    print(f'Elapsed time for inference: {int(inference_time)}s')
 
     return accuracy, inference_time
 
