@@ -116,8 +116,7 @@ def train(model, trainloader, is_double_experiment=False):
     print(f'Elapsed time for training: {int(training_time)}s')
     return model, training_time
 
-def test(model, testloader, is_double_experiment=False):
-    t0 = time.time()
+def test(model, testloader, is_double_experiment=False): # TODO: modify to quantisize model AND inputs, and many quantization modes (dynamic, static, QAT ...)
     correct = 0
     total = 0
     with torch.no_grad():
@@ -125,11 +124,12 @@ def test(model, testloader, is_double_experiment=False):
             images, labels = data
             if is_double_experiment:
                 images = images.double()
+            t0 = time.time()
             outputs = model(images)
+            t1 = time.time()
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-    t1 = time.time()
 
     accuracy = 100 * correct / total
     inference_time = t1 - t0
