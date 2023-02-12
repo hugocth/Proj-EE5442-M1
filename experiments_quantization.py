@@ -148,6 +148,7 @@ def test(model, testloader, is_double_experiment=False):
 
     print('Accuracy of the network on the 10000 test images: %d %%' % (accuracy))
     print(f'Elapsed time for inference: {int(inference_time)}s')
+    print(f"Model Size: {model_size} MB")
 
     return accuracy, inference_time, model_size
 
@@ -180,6 +181,7 @@ def main(datasets):
 
             ## fp32
             model, training_time = train(model=model, trainloader=trainloader) ## Simple precision
+            print("For fp32")
             accuracy, inference_time, model_size = test(model=model, testloader=testloader)
             res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, torch.float, accuracy, training_time, inference_time, model_size]
 
@@ -190,10 +192,12 @@ def main(datasets):
                     {torch.nn.Conv2d, torch.nn.Linear},     # a set of layers to dynamically quantize
                     dtype=quantization                      # the target dtype for quantized weights
                 )
+                print(f"For {quantization}")
                 accuracy, inference_time, model_size = test(model=q_model, testloader=testloader)
                 res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, quantization, accuracy, training_time, inference_time, model_size]
 
             ## fp64
+            print(f"For fp64")
             accuracy, training_time, model_size = test(model=model.double(), testloader=testloader, is_double_experiment=True)
             res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, torch.double, accuracy, training_time, inference_time, model_size]
 
