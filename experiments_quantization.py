@@ -164,12 +164,8 @@ def main(datasets):
             accuracy, training_time = experiment(model=model, trainloader=trainloader, testloader=testloader) ## Simple precision
             res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, torch.float, accuracy, training_time]
 
-            ## fp64
-            accuracy, training_time = experiment(model=model.double(), trainloader=trainloader, testloader=testloader, is_double_experiment=True)
-            res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, torch.double, accuracy, training_time]
-
             ## int8 and int4 --> doesn't work on macOS ...
-            for quantization in [torch.qint32, torch.qint8, torch.quint4x2]:
+            for quantization in [torch.qint8, torch.quint4x2]:
                 q_model = torch.quantization.quantize_dynamic(
                     model,                                  # the original model
                     {torch.nn.Conv2d, torch.nn.Linear},     # a set of layers to dynamically quantize
@@ -178,6 +174,10 @@ def main(datasets):
                 accuracy, training_time = experiment(model=q_model, trainloader=trainloader, testloader=testloader)
 
                 res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, quantization, accuracy, training_time]
+
+            ## fp64
+            accuracy, training_time = experiment(model=model.double(), trainloader=trainloader, testloader=testloader, is_double_experiment=True)
+            res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, torch.double, accuracy, training_time]
 
     now = datetime.now()
     dt_string = now.strftime("%d-%m-%Y %H:%M:%S")
