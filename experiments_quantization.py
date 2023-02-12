@@ -79,7 +79,7 @@ def load_dataset(dataset, model_is_LeNet=False):
     return trainloader, testloader, in_channels, num_classes
 
 
-def experiment(model, trainloader, testloader, is_double_experiment=False):
+def train(model, trainloader, testloader, is_double_experiment=False):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
@@ -111,8 +111,13 @@ def experiment(model, trainloader, testloader, is_double_experiment=False):
                 running_loss = 0.0
 
     t1 = time.time()
+    training_time = t1 - t0
     print('Finished Training')
+    print(f'Elapsed time for training: {int(training_time)}s')
+    return model, training_time
 
+def test(model, testloader, is_double_experiment=False):
+    t0 = time.time()
     correct = 0
     total = 0
     with torch.no_grad():
@@ -124,19 +129,20 @@ def experiment(model, trainloader, testloader, is_double_experiment=False):
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+    t1 = time.time()
 
     accuracy = 100 * correct / total
-    training_time = t1 - t0
+    inference_time = t1 - t0
 
     print('Accuracy of the network on the 10000 test images: %d %%' % (accuracy))
-    print(f'Elapsed time for training: {int(training_time)}s')
+    print(f'Elapsed time for training: {int(inference_time)}s')
 
-    return accuracy, training_time
+    return accuracy, inference_time
 
 
 def main(datasets):
 
-    res_df = pd.DataFrame(columns=["Model", "Dataset", "Quantization", "Accuracy", "Training Time"])
+    res_df = pd.DataFrame(columns=["Model", "Dataset", "Quantization", "Accuracy", "Training Time", "Inference Time"])
 
     for dataset in datasets:
         ## Load dataset
@@ -161,23 +167,23 @@ def main(datasets):
                 trainloader, testloader, in_channels, num_classes = load_dataset(dataset, model_is_LeNet=True)
 
             ## fp32
-            accuracy, training_time = experiment(model=model, trainloader=trainloader, testloader=testloader) ## Simple precision
-            res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, torch.float, accuracy, training_time]
+            model, training_time = train(model=model, trainloader=trainloader) ## Simple precision
+            accuracy, inference_time = test(model=model, testloader=testloader)
+            res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, torch.float, accuracy, training_time, inference_time]
 
-            ## int8 and int4 --> doesn't work on macOS ...
-            for quantization in [torch.qint8, torch.quint4x2]:
+            ## float16 and int8 --> doesn't work on macOS ...
+            for quantization in [torch.float16, torch.qint8]:
                 q_model = torch.quantization.quantize_dynamic(
                     model,                                  # the original model
                     {torch.nn.Conv2d, torch.nn.Linear},     # a set of layers to dynamically quantize
                     dtype=quantization                      # the target dtype for quantized weights
                 )
-                accuracy, training_time = experiment(model=q_model, trainloader=trainloader, testloader=testloader)
-
-                res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, quantization, accuracy, training_time]
+                accuracy, inference_time = test(model=q_model, testloader=testloader)
+                res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, quantization, accuracy, training_time, inference_time]
 
             ## fp64
-            accuracy, training_time = experiment(model=model.double(), trainloader=trainloader, testloader=testloader, is_double_experiment=True)
-            res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, torch.double, accuracy, training_time]
+            accuracy, training_time = test(model=model.double(), testloader=testloader, is_double_experiment=True)
+            res_df.loc[res_df.shape[0]] = [models_labels[i], dataset, torch.double, accuracy, training_time, inference_time]
 
     now = datetime.now()
     dt_string = now.strftime("%d-%m-%Y %H:%M:%S")
