@@ -93,5 +93,5 @@ def main(datasets): # TODO : parser
 
 
 if __name__ == "__main__":
-    datasets = ["MNIST"]
+    datasets = ["FashionMNIST", "CIFAR10", "CIFAR100"]
     main(datasets)
