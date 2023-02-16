@@ -15,106 +15,8 @@ import time
 from datetime import datetime
 
 from networks import LeNet, AlexNet, VGG11, BasicBlock, ResNet
+from dataset_downloaders import load_dataset
 
-def load_dataset(dataset, model_is_LeNet=False):
-
-    ## Setup transformation pipeline for MNIST and CIFAR
-    transform_MNIST = transforms.Compose([
-        transforms.Resize(224),
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-    ])
-
-    transform_CIFAR = transforms.Compose([
-        transforms.Resize(224),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
-
-    if model_is_LeNet: # No resizing because input for LeNet is 32x32
-        transform_MNIST = transforms.Compose([
-            transforms.Resize(32),
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
-        ])
-
-        transform_CIFAR = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-
-    ## Load datasets
-    if dataset == "MNIST":
-        trainset = torchvision.datasets.MNIST(root="./data", train=True, download=False, transform=transform_MNIST)
-        testset = torchvision.datasets.MNIST(root='./data', train=False, download=False, transform=transform_MNIST) 
-        in_channels = 1
-        num_classes = 10
-
-
-    elif dataset == "FashionMNIST":
-        trainset = torchvision.datasets.FashionMNIST(root="./data", train=True, download=False, transform=transform_MNIST)
-        testset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=False, transform=transform_MNIST)   
-        in_channels = 1
-        num_classes = 10
-
-    elif dataset == "CIFAR10":
-        trainset = torchvision.datasets.CIFAR10(root="./data", train=True, download=False, transform=transform_CIFAR)
-        testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=False, transform=transform_CIFAR) 
-        in_channels = 3
-        num_classes = 10
-
-    elif dataset == "CIFAR100":
-        trainset = torchvision.datasets.CIFAR100(root="./data", train=True, download=False, transform=transform_CIFAR)
-        testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=False, transform=transform_CIFAR)      
-        in_channels = 3
-        num_classes = 100
-
-    else:
-        print("Dataset not recognized. Possible datasets: MNIST, FashionMNIST, CIFAR10, CIFAR100")
-        return 
-
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=4,shuffle=False, num_workers=2)
-
-    return trainloader, testloader, in_channels, num_classes
-
-
-def train(model, trainloader, is_double_experiment=False):
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-
-    print("Begin training")
-    t0 = time.time()
-    for epoch in range(2):  # loop over the dataset multiple times
-
-        running_loss = 0.0
-        for i, data in enumerate(trainloader, 0):
-            # get the inputs
-            inputs, labels = data
-            if is_double_experiment:
-                inputs = inputs.double()
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward + backward + optimize
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            # print statistics
-            running_loss += loss.item()
-            if i % 2000 == 1999:    # print every 2000 mini-batches
-                print('[%d, %5d] loss: %.3f' %
-                    (epoch + 1, i + 1, running_loss / 2000))
-                running_loss = 0.0
-
-    t1 = time.time()
-    training_time = t1 - t0
-    print('Finished Training')
-    print(f'Elapsed time for training: {int(training_time)}s')
-    return model, training_time
 
 def test(model, testloader, is_double_experiment=False): # TODO: modify to quantisize model AND inputs, and many quantization modes (dynamic, static, QAT ...)
     correct = 0
@@ -153,7 +55,7 @@ def test(model, testloader, is_double_experiment=False): # TODO: modify to quant
     return accuracy, inference_time, model_size
 
 
-def main(datasets):
+def main():
 
     res_df = pd.DataFrame(columns=["Model", "Dataset", "Quantization", "Accuracy", "Training Time", "Inference Time", "Model Size"])
 
