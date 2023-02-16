@@ -1,4 +1,5 @@
 numpy
 pandas
-pytorch
+torch
+torchvision
 matplotlib
