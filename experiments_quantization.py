@@ -14,12 +14,10 @@ from copy import deepcopy
 from networks import LeNet, AlexNet, VGG11, BasicBlock, ResNet
 from dataset_downloaders import load_dataset
 
-backend = 'qnnpack'
-torch.backends.quantized.engine = backend
-
 def quantization_experiment(model, model_label, dataset, test_loader):
-    data_types = ["float32", torch.qint8, "float64"]
+    data_types = ["float32", torch.qint8, torch.float16, "float64"]
     res = []
+
     for data_type in data_types:
         print(f"Begin for {model_label}, {data_type}")
         if data_type == "float32":
@@ -29,14 +27,15 @@ def quantization_experiment(model, model_label, dataset, test_loader):
         elif data_type == "float64":
             d_model = model.double()
             accuracy, mag, inference_time = test(model=d_model, testloader=test_loader, is_double_experiment=True)
-            model_size = get_size_of_model(model)            
+            model_size = get_size_of_model(d_model)            
         else:
             q_model = torch.quantization.quantize_dynamic(
                 model, 
                 {nn.Conv2d, nn.Linear}, 
                 dtype=data_type) 
             accuracy, mag, inference_time = test(model=q_model, testloader=test_loader)
-            model_size = get_size_of_model(model)                  
+            model_size = get_size_of_model(q_model)      
+
         res.append([model_label, dataset, data_type, accuracy, mag, inference_time, model_size])
     return res
 
@@ -105,10 +104,9 @@ def main():
         
         model.load_state_dict(torch.load(PATH, map_location=device))
         print(f"Begin for {trained_model_filename}...")
-        # experiment_results = quantization_experiment(model=model, model_label=model_label, dataset=dataset, test_loader=test_loader)
-        # for result in experiment_results:
-        #     res_df.loc[res_df.shape[0]] = result
-        print(get_size_of_model(model, model_label))
+        experiment_results = quantization_experiment(model=model, model_label=model_label, dataset=dataset, test_loader=test_loader)
+        for result in experiment_results:
+            res_df.loc[res_df.shape[0]] = result
         
     now = datetime.now()
     dt_string = now.strftime("%d-%m-%Y %H:%M:%S")

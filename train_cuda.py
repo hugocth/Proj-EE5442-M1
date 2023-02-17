@@ -62,7 +62,7 @@ def train(model, model_label, trainloader):
     return model, training_time
 
 
-def main(datasets): # TODO : parser
+def main(datasets, only_leNet=False): # TODO : parser
 
     for dataset in datasets:
         ## Load dataset
@@ -76,6 +76,10 @@ def main(datasets): # TODO : parser
         models = [leNet, alexNet, vgg11, resNet18]
         models_labels = ["leNet", "alexNet", "vgg11", "resNet18"]
 
+        if only_leNet:
+            models = [leNet]
+            models_labels = ["leNet"]
+
 
         for i, model in enumerate(models):
             if models_labels[i] == "leNet":
@@ -88,5 +92,5 @@ def main(datasets): # TODO : parser
 
 
 if __name__ == "__main__":
-    datasets = ["FashionMNIST", "CIFAR10", "CIFAR100"]
+    datasets = ["FashionMNIST"]
     main(datasets)
