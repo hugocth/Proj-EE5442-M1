@@ -14,8 +14,11 @@ from copy import deepcopy
 from networks import LeNet, AlexNet, VGG11, BasicBlock, ResNet
 from dataset_downloaders import load_dataset
 
+backend = 'qnnpack'
+torch.backends.quantized.engine = backend
+
 def quantization_experiment(model, model_label, dataset, test_loader):
-    data_types = ["float32", torch.float16 torch.qint8, "float64"]
+    data_types = ["float32", torch.qint8, "float64"]
     res = []
     for data_type in data_types:
         print(f"Begin for {model_label}, {data_type}")
@@ -41,7 +44,7 @@ def quantization_experiment(model, model_label, dataset, test_loader):
 def get_size_of_model(model, label=""):
     torch.save(model.state_dict(), "temp.p")
     size=os.path.getsize("temp.p")
-    print("model: ",label,' \t','Size (KB):', size/1e3)
+    print("model: ",label,' \t','Size (MB):', size/1e6)
     os.remove('temp.p')
     return size
 
@@ -82,9 +85,9 @@ def main():
         model_label = trained_model_filename.split("_")[0]
         dataset = trained_model_filename.split("_")[2]
         
-        # To test on only 1 model and 1 dataset
-        if not (model_label == "alexNet" & dataset =="MNIST"):
-            continue
+        # # To test on only 1 model and 1 dataset
+        # if not((model_label == "alexNet") & (dataset =="MNIST")):
+        #     continue
 
         flag = (model_label == "leNet")
         _, test_loader, in_channels, num_classes = load_dataset(dataset=dataset, model_is_LeNet=flag)
@@ -102,9 +105,10 @@ def main():
         
         model.load_state_dict(torch.load(PATH, map_location=device))
         print(f"Begin for {trained_model_filename}...")
-        experiment_results = quantization_experiment(model=model, model_label=model_label, dataset=dataset, test_loader=test_loader)
-        for result in experiment_results:
-            res_df.loc[res_df.shape[0]] = result
+        # experiment_results = quantization_experiment(model=model, model_label=model_label, dataset=dataset, test_loader=test_loader)
+        # for result in experiment_results:
+        #     res_df.loc[res_df.shape[0]] = result
+        print(get_size_of_model(model, model_label))
         
     now = datetime.now()
     dt_string = now.strftime("%d-%m-%Y %H:%M:%S")
