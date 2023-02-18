@@ -109,7 +109,7 @@ def main():
             res_df.loc[res_df.shape[0]] = result
         
     now = datetime.now()
-    dt_string = now.strftime("%d-%m-%Y %H:%M:%S")
+    dt_string = now.strftime("%d-%m-%Y %H_%M_%S")
     res_df.to_csv(f"results/experiment_{dt_string}.csv")
     return
 
